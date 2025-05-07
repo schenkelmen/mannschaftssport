@@ -7,6 +7,8 @@ import de.hsos.swa.boundary.util.dto.PlayersDTO;
 import de.hsos.swa.boundary.util.dto.TeamDTO;
 import de.hsos.swa.boundary.util.dto.TeamIdDTO;
 import de.hsos.swa.boundary.util.dto.TeamNeuDTO;
+import de.hsos.swa.control.PersonService;
+import de.hsos.swa.entity.Person;
 import de.hsos.swa.entity.TeamVerwalter;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
@@ -53,6 +55,8 @@ public class TeamResource {
 
     @Inject
     TeamVerwalter teamVerwalter;
+    @Inject
+    PersonService personService;
 
     @ConfigProperty(name = "defaultTeamSize", defaultValue = "0")
     int defaultTeamSize;
@@ -180,6 +184,17 @@ public class TeamResource {
     @Path("{id}/players")
     @Operation(summary = "Team-Spieler-IDs ändern")
     public Response patchPlayers(@PathParam("id") String id, PlayersDTO dto) {
+        // 1. Jeden neuen Spieler-Pass validieren
+        try {
+            dto.playerIds().forEach(personService::verifyAndAddPlayer);
+        } catch (IllegalStateException e) {
+            // wenn ein Pass fehlt oder ungültig ist: Bad Request
+            return Response.status(Status.BAD_REQUEST)
+                    .entity(e.getMessage())
+                    .build();
+        }
+
+        // 2. Nur wenn alle validiert sind, die Änderung durchführen
         return teamVerwalter.aendereSpieler(id, dto.playerIds())
                 .map(t -> Response.noContent().build())
                 .orElseGet(() -> Response.status(Status.NOT_FOUND).build());
