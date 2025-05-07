@@ -5,6 +5,7 @@ import jakarta.json.bind.annotation.JsonbCreator;
 import org.eclipse.microprofile.openapi.annotations.media.Schema;
 
 import java.util.List;
+import java.util.Map;
 
 public record TeamDTO(
         @Schema(description = "Name des Teams")
@@ -16,7 +17,9 @@ public record TeamDTO(
         @Schema(description = "ID des Managers")
         String managerId,
         @Schema(description = "IDs der Spieler")
-        List<String> playerIds) {
+        List<String> playerIds,
+        @Schema(description = "Hypermedia Links im HATEOAS-Stil")
+        Map<String, String> _links) {
 
     @JsonbCreator
     public TeamDTO {
@@ -35,10 +38,22 @@ public record TeamDTO(
         if (playerIds == null || playerIds.isEmpty()) {
             throw new IllegalArgumentException("Spieler IDs dürfen nicht null oder leer sein");
         }
+        if (_links == null) {
+            throw new IllegalArgumentException("_links darf nicht null sein");
+        }
     }
 
     public static TeamDTO toDto(Team team) {
-        return new TeamDTO(team.getName(), team.getId(), team.getCategory(), team.getManagerId(), team.getPlayerIds());
+        String base = "/teams/" + team.getId();
+        Map<String, String> links = Map.of(
+                "self", base,
+                "updateName", base + "/name",
+                "updateCategory", base + "/category",
+                "updateManager", base + "/manager",
+                "updatePlayers", base + "/players",
+                "delete", base
+        );
+        return new TeamDTO(team.getName(), team.getId(), team.getCategory(), team.getManagerId(), team.getPlayerIds(), links);
     }
 
     //hashCode
