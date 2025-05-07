@@ -2,6 +2,7 @@ package de.hsos.swa.gateway;
 
 import de.hsos.swa.entity.Team;
 import de.hsos.swa.entity.TeamVerwalter;
+import jakarta.enterprise.context.ApplicationScoped;
 import org.eclipse.microprofile.faulttolerance.CircuitBreaker;
 import org.eclipse.microprofile.faulttolerance.Fallback;
 import org.eclipse.microprofile.faulttolerance.Retry;
@@ -12,6 +13,7 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+@ApplicationScoped
 public class TeamRepository implements TeamVerwalter {
     private static final Logger LOG = Logger.getLogger(TeamRepository.class);
     private ConcurrentMap<String, Team> teams = new ConcurrentHashMap<>();
@@ -20,7 +22,6 @@ public class TeamRepository implements TeamVerwalter {
     @Retry(maxRetries = 3, delay = 200)
     @Timeout(2000)
     @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 5000)
-    @Fallback(fallbackMethod = "fallbackAnlegenNeuTeam")
     public String anlegenNeuTeam(String name, String category, String managerId, List<String> playerIds) {
         String id = UUID.randomUUID().toString();
         Team team = new Team(id, name, category, managerId, playerIds);
@@ -29,17 +30,10 @@ public class TeamRepository implements TeamVerwalter {
         return id;
     }
 
-    public String fallbackAnlegenNeuTeam(String name, String zutaten, String zubereitung) {
-        LOG.error("Fallback: Team konnte nicht angelegt werden.");
-        return "error-fallback-Team";
-    }
-
-
     @Override
     @Retry(maxRetries = 3, delay = 200)
     @Timeout(1500)
     @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 5000)
-    @Fallback(fallbackMethod = "fallbackEntfernen")
     public boolean entfernenTeam(String id) {
         try {
             Team remove = this.teams.remove(id);
@@ -55,16 +49,10 @@ public class TeamRepository implements TeamVerwalter {
         }
     }
 
-    public boolean fallbackEntfernen(String id) {
-        LOG.error("Fallback: Entfernen fehlgeschlagen für Team-ID: " + id);
-        return false;
-    }
-
     @Override
     @Retry(maxRetries = 2, delay = 300)
     @Timeout(1000)
     @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
-    @Fallback(fallbackMethod = "fallbackAendereName")
     public Optional<Team> aendereName(String id, String neuerName) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -80,16 +68,10 @@ public class TeamRepository implements TeamVerwalter {
         }
     }
 
-    public Optional<Team> fallbackAendereName(String id) {
-        LOG.error("Fallback: Änderung des Names fehlgeschlagen für Team-ID: " + id);
-        return Optional.empty();
-    }
-
     @Override
     @Retry(maxRetries = 2, delay = 300)
     @Timeout(1000)
     @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
-    @Fallback(fallbackMethod = "fallbackAendereKategorie")
     public Optional<Team> aendereKategorie(String id, String neueKategorie) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -105,16 +87,10 @@ public class TeamRepository implements TeamVerwalter {
         }
     }
 
-    public Optional<Team> fallbackAendereKategorie(String id) {
-        LOG.error("Fallback: Änderung der Kategorie fehlgeschlagen für Team-ID: " + id);
-        return Optional.empty();
-    }
-
     @Override
     @Retry(maxRetries = 2, delay = 300)
     @Timeout(1000)
     @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
-    @Fallback(fallbackMethod = "fallbackAendereManager")
     public Optional<Team> aendereManager(String id, String neuerManagerId) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -130,16 +106,10 @@ public class TeamRepository implements TeamVerwalter {
         }
     }
 
-    public Optional<Team> fallbackAendereManager(String id) {
-        LOG.error("Fallback: Änderung des Managers fehlgeschlagen für Team-ID: " + id);
-        return Optional.empty();
-    }
-
     @Override
     @Retry(maxRetries = 2, delay = 300)
     @Timeout(1000)
     @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
-    @Fallback(fallbackMethod = "fallbackAendereSpieler")
     public Optional<Team> aendereSpieler(String id, List<String> neuePlayerIds) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -153,11 +123,6 @@ public class TeamRepository implements TeamVerwalter {
             LOG.error("Fehler beim Ändern der Spieler für Team: " + id, ie);
             throw new IllegalArgumentException("Name not updated.", ie);
         }
-    }
-
-    public Optional<Team> fallbackAendereSpieler(String id) {
-        LOG.error("Fallback: Änderung der Spieler fehlgeschlagen für Team-ID: " + id);
-        return Optional.empty();
     }
 
     @Override
@@ -184,13 +149,9 @@ public class TeamRepository implements TeamVerwalter {
     @Retry(maxRetries = 3, delay = 200)
     @Timeout(2000)
     @CircuitBreaker(requestVolumeThreshold = 5, failureRatio = 0.5, delay = 4000)
-    @Fallback(fallbackMethod = "fallbackAlleTeams")
     public Collection<Team> alleTeams() {
         LOG.info("Alle Teams werden abgefragt.");
         return Collections.unmodifiableCollection(this.teams.values());
     }
-    public Optional<Team> fallbackAlleTeams() {
-        LOG.error("Fallback: Fehler beim Abfragen aller Teams.");
-        return Optional.empty();
-    }
+
 }

@@ -88,6 +88,11 @@ public class TeamResource {
                 .toList();
     }
 
+    public Collection<TeamDTO> fallbackAlleTeams() {
+        LOG.warn("Fallback: abfragenAlleTeams()");
+        return List.of();
+    }
+
     @PATCH
     @Operation(summary = "Nicht erlaubt",
             description = "PATCH auf /teams ist nicht gestattet.")
@@ -125,6 +130,13 @@ public class TeamResource {
             LOG.error("Fehler bei Eingabe", e);
             return Response.status(Status.BAD_REQUEST).build();
         }
+    }
+
+    public Response fallbackNeuesTeamAnlegen(TeamNeuDTO dto) {
+        LOG.warnf("Fallback: anlegenNeuesTeam() für %s", dto.name());
+        return Response.status(Status.SERVICE_UNAVAILABLE)
+                .entity("Dienst momentan nicht verfügbar, bitte später erneut versuchen.")
+                .build();
     }
 
     @DELETE
