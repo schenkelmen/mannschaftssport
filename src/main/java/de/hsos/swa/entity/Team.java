@@ -11,7 +11,7 @@ public class Team {
     private List<String> playerIds = new ArrayList<>();
 
     public Team() {}
-    public Team(String id, String name, String category) {
+    public Team(String id, String name, String category, String managerId, List<String> playerIds) {
         this.id       = id;
         this.name     = name;
         this.category = category;
