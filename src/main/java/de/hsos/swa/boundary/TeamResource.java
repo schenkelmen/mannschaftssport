@@ -8,13 +8,12 @@ import de.hsos.swa.boundary.util.dto.TeamDTO;
 import de.hsos.swa.boundary.util.dto.TeamIdDTO;
 import de.hsos.swa.boundary.util.dto.TeamNeuDTO;
 import de.hsos.swa.control.PersonService;
-import de.hsos.swa.entity.Person;
 import de.hsos.swa.entity.TeamVerwalter;
 import io.smallrye.common.annotation.RunOnVirtualThread;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
-import jakarta.enterprise.event.Shutdown;
-import jakarta.enterprise.event.Startup;
+import io.quarkus.runtime.StartupEvent;
+import io.quarkus.runtime.ShutdownEvent;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
@@ -61,20 +60,53 @@ public class TeamResource {
     @ConfigProperty(name = "defaultTeamSize", defaultValue = "0")
     int defaultTeamSize;
 
-    void onStart(@Observes Startup event) {
-        LOG.info("Startup: Beispiel-Teams anlegen...");
-        this.teamVerwalter.anlegenNeuTeam("Alpha", "Kategorie A", "mgr1", List.of("p1","p2"));
-        this.teamVerwalter.anlegenNeuTeam("Beta",  "Kategorie B", "mgr2", List.of("p3","p4"));
+    void onStart(@Observes StartupEvent ev) {
+        LOG.info("Startup: Beispiel-Teams anlegen…");
+        teamVerwalter.anlegenNeuTeam("Alpha", "Kategorie A", "mgr1", List.of("p1","p2"));
+        teamVerwalter.anlegenNeuTeam("Beta",  "Kategorie B", "mgr2", List.of("p3","p4"));
     }
 
-    void onStop(@Observes Shutdown event) {
-        LOG.info("Shutdown: Aufräumen...");
+    void onStop(@Observes ShutdownEvent ev) {
+        LOG.info("Shutdown: Aufräumen…");
     }
 
     @GET
+    @Path("{id}")
     @Retry(maxRetries = 3, delay = 500)
     @Timeout(2000)
-    @Fallback(fallbackMethod = "fallbackAlleTeams")
+    @Fallback(fallbackMethod = "fallbackGetTeamById")
+    @Operation(
+            summary     = "Einzelnes Team abrufen",
+            description = "Gibt das Team mit der angegebenen ID zurück."
+    )
+    @APIResponses({
+            @APIResponse(
+                    responseCode = "200",
+                    description  = "Team gefunden",
+                    content      = @Content(schema = @Schema(implementation = TeamDTO.class))
+            ),
+            @APIResponse(
+                    responseCode = "404",
+                    description  = "Team nicht gefunden"
+            )
+    })
+    public Response getTeamById(@PathParam("id") String id) {
+        return teamVerwalter.findeTeamMitId(id)
+                .map(team -> Response.ok(TeamDTO.toDto(team)).build())
+                .orElseGet(() -> Response.status(Status.NOT_FOUND).build());
+    }
+
+    public Response fallbackGetTeamById(String id) {
+        LOG.warnf("Fallback: getTeamById(%s)", id);
+        return Response.status(Status.SERVICE_UNAVAILABLE)
+                .entity("Dienst nicht verfügbar, bitte später erneut versuchen.")
+                .build();
+    }
+
+
+    @GET
+    @Retry(maxRetries = 3, delay = 500)
+    @Timeout(5000)
     @Operation(summary = "Alle Teams abrufen",
             description = "Gibt eine Liste aller existierenden Teams zurück.")
     @APIResponse(responseCode = "200",
@@ -82,25 +114,17 @@ public class TeamResource {
             content = @Content(schema = @Schema(implementation = TeamDTO.class)))
     public Collection<TeamDTO> abfragenAlleTeams() {
         LOG.info("GET /teams");
+        LOG.info(this.teamVerwalter.alleTeams()
+                .stream()
+                .map(TeamDTO::toDto)
+                .toList());
         return this.teamVerwalter.alleTeams()
                 .stream()
                 .map(TeamDTO::toDto)
                 .toList();
     }
 
-    public Collection<TeamDTO> fallbackAlleTeams() {
-        LOG.warn("Fallback: abfragenAlleTeams()");
-        return List.of();
-    }
 
-    @PATCH
-    @Operation(summary = "Nicht erlaubt",
-            description = "PATCH auf /teams ist nicht gestattet.")
-    @APIResponse(responseCode = "405", description = "Methode nicht erlaubt")
-    public Response patchNotAllowed() {
-        LOG.warn("PATCH /teams nicht erlaubt");
-        return Response.status(Status.METHOD_NOT_ALLOWED).build();
-    }
 
     @POST
     @CircuitBreaker(requestVolumeThreshold = 5, failureRatio = 0.5, delay = 3000)
@@ -198,7 +222,7 @@ public class TeamResource {
     public Response patchPlayers(@PathParam("id") String id, PlayersDTO dto) {
         // 1. Jeden neuen Spieler-Pass validieren
         try {
-            dto.playerIds().forEach(personService::verifyAndAddPlayer);
+            dto.playerIds().forEach(personService::verifyPlayerPass);
         } catch (IllegalStateException e) {
             // wenn ein Pass fehlt oder ungültig ist: Bad Request
             return Response.status(Status.BAD_REQUEST)

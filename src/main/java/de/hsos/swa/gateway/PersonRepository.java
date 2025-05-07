@@ -51,25 +51,6 @@ public class PersonRepository implements PersonVerwalter {
         }
     }
 
-    @Override
-    @Retry(maxRetries = 2, delay = 300)
-    @Timeout(1000)
-    @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
-    public Optional<Person> aendereName(String id, String neuerName) {
-        try {
-            Optional<Person> personOptional = Optional.ofNullable(this.personen.get(id));
-            if(personOptional.isPresent()) {
-                Person person = personOptional.get();
-                person.setName(neuerName);
-                LOG.info("Name geändert für Person ID: " + id);
-            }
-            return personOptional;
-        } catch (IllegalArgumentException ie) {
-            LOG.error("Fehler beim Ändern dedes Namen für Person: " + id, ie);
-            throw new IllegalArgumentException("Person not updated.", ie);
-        }
-    }
-
     @Retry(maxRetries = 3, delay = 200)
     @Timeout(2000)
     @CircuitBreaker(requestVolumeThreshold = 5, failureRatio = 0.5, delay = 4000)

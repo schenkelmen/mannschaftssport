@@ -1,12 +1,9 @@
 package de.hsos.swa.control;
 
-import de.hsos.swa.entity.Person;
 import de.hsos.swa.entity.PersonPass;
 import de.hsos.swa.gateway.PersonPassClient;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
-
-import java.util.*;
 
 @ApplicationScoped
 public class PersonService {
@@ -18,7 +15,7 @@ public class PersonService {
     // @Inject @RestClient
     // PersonPassClient passClient;
 
-    public void verifyAndAddPlayer(String playerId) {
+    public void verifyPlayerPass(String playerId) {
         PersonPass pass = passClient.fetchPass(playerId)
                 .orElseThrow(() -> new IllegalStateException("Kein Pass gefunden"));
         if (!pass.isValid()) {

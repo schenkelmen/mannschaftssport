@@ -19,9 +19,6 @@ public class TeamRepository implements TeamVerwalter {
     private ConcurrentMap<String, Team> teams = new ConcurrentHashMap<>();
 
     @Override
-    @Retry(maxRetries = 3, delay = 200)
-    @Timeout(2000)
-    @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 5000)
     public String anlegenNeuTeam(String name, String category, String managerId, List<String> playerIds) {
         String id = UUID.randomUUID().toString();
         Team team = new Team(id, name, category, managerId, playerIds);
@@ -31,9 +28,6 @@ public class TeamRepository implements TeamVerwalter {
     }
 
     @Override
-    @Retry(maxRetries = 3, delay = 200)
-    @Timeout(1500)
-    @CircuitBreaker(requestVolumeThreshold = 4, failureRatio = 0.5, delay = 5000)
     public boolean entfernenTeam(String id) {
         try {
             Team remove = this.teams.remove(id);
@@ -50,9 +44,6 @@ public class TeamRepository implements TeamVerwalter {
     }
 
     @Override
-    @Retry(maxRetries = 2, delay = 300)
-    @Timeout(1000)
-    @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
     public Optional<Team> aendereName(String id, String neuerName) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -69,9 +60,6 @@ public class TeamRepository implements TeamVerwalter {
     }
 
     @Override
-    @Retry(maxRetries = 2, delay = 300)
-    @Timeout(1000)
-    @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
     public Optional<Team> aendereKategorie(String id, String neueKategorie) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -88,9 +76,6 @@ public class TeamRepository implements TeamVerwalter {
     }
 
     @Override
-    @Retry(maxRetries = 2, delay = 300)
-    @Timeout(1000)
-    @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
     public Optional<Team> aendereManager(String id, String neuerManagerId) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -107,9 +92,6 @@ public class TeamRepository implements TeamVerwalter {
     }
 
     @Override
-    @Retry(maxRetries = 2, delay = 300)
-    @Timeout(1000)
-    @CircuitBreaker(requestVolumeThreshold = 3, failureRatio = 0.5, delay = 4000)
     public Optional<Team> aendereSpieler(String id, List<String> neuePlayerIds) {
         try {
             Optional<Team> teamOptional = Optional.ofNullable(this.teams.get(id));
@@ -126,10 +108,6 @@ public class TeamRepository implements TeamVerwalter {
     }
 
     @Override
-    @Retry(maxRetries = 3, delay = 200)
-    @Timeout(2000)
-    @CircuitBreaker(requestVolumeThreshold = 5, failureRatio = 0.5, delay = 4000)
-    @Fallback(fallbackMethod = "fallbackFindeTeamMitId")
     public Optional<Team> findeTeamMitId(String id) {
         Team team = this.teams.get(id);
         if (team == null) {
@@ -146,11 +124,9 @@ public class TeamRepository implements TeamVerwalter {
     }
 
     @Override
-    @Retry(maxRetries = 3, delay = 200)
-    @Timeout(2000)
-    @CircuitBreaker(requestVolumeThreshold = 5, failureRatio = 0.5, delay = 4000)
     public Collection<Team> alleTeams() {
         LOG.info("Alle Teams werden abgefragt.");
+        LOG.info(Collections.unmodifiableCollection(this.teams.values()));
         return Collections.unmodifiableCollection(this.teams.values());
     }
 

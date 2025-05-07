@@ -7,6 +7,8 @@ import org.eclipse.microprofile.openapi.annotations.media.Schema;
 import java.util.List;
 import java.util.Map;
 
+import static io.quarkus.arc.ComponentsProvider.LOG;
+
 public record TeamDTO(
         @Schema(description = "Name des Teams")
         String name,
@@ -32,12 +34,6 @@ public record TeamDTO(
         if (category == null || category.isBlank()) {
             throw new IllegalArgumentException("Kategorie darf nicht null oder leer sein");
         }
-        if (managerId == null || managerId.isBlank()) {
-            throw new IllegalArgumentException("Manager ID darf nicht null oder leer sein");
-        }
-        if (playerIds == null || playerIds.isEmpty()) {
-            throw new IllegalArgumentException("Spieler IDs dürfen nicht null oder leer sein");
-        }
         if (_links == null) {
             throw new IllegalArgumentException("_links darf nicht null sein");
         }
@@ -53,7 +49,10 @@ public record TeamDTO(
                 "updatePlayers", base + "/players",
                 "delete", base
         );
-        return new TeamDTO(team.getName(), team.getId(), team.getCategory(), team.getManagerId(), team.getPlayerIds(), links);
+        LOG.info("IM toDTO");
+        TeamDTO teamDTO = new TeamDTO(team.getName(), team.getId(), team.getCategory(), team.getManagerId(), team.getPlayerIds(), links);
+        LOG.info(teamDTO);
+        return teamDTO;
     }
 
     //hashCode
