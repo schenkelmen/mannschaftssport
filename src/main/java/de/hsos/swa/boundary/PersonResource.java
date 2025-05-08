@@ -35,6 +35,8 @@ public class PersonResource {
 
     @Inject
     PersonVerwalter personVerwalter;
+    @Inject
+    PersonService personService;
 
     @GET
     @Retry(maxRetries = 3, delay = 200)
@@ -99,6 +101,7 @@ public class PersonResource {
     public Response createPerson(PersonNeuDTO dto) {
         // ID wird von PersonService generiert
         String id = personVerwalter.anlegenNeuPerson(dto.name());
+        personService.addNewPlayerPass(id);
         return Response.status(Status.CREATED)
                 .entity(new PersonIdDTO(id))
                 .build();

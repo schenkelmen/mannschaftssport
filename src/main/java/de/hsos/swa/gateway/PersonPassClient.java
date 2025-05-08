@@ -12,4 +12,6 @@ public interface PersonPassClient {
      * @return Optional mit PersonPass, falls vorhanden
      */
     Optional<PersonPass> fetchPass(String personId);
+
+    void addPass(PersonPass pass);
 }

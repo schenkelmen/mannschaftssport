@@ -22,6 +22,10 @@ public class PersonService {
             throw new IllegalStateException("Pass ungültig");
         }
         // Spieler jetzt ins Team aufnehmen
+    }
 
+    public void addNewPlayerPass(String playerId) {
+        PersonPass pass = new PersonPass(playerId, true, "2024-01-01");
+        passClient.addPass(pass);
     }
 }

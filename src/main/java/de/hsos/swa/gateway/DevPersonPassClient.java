@@ -21,4 +21,11 @@ public class DevPersonPassClient implements PersonPassClient {
     public Optional<PersonPass> fetchPass(String personId) {
         return Optional.ofNullable(store.get(personId));
     }
+
+    @Override
+    public void addPass(PersonPass pass) {
+        if (pass != null) {
+            store.put(pass.getPersonId(), pass);
+        }
+    }
 }
